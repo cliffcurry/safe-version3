@@ -1,0 +1,2 @@
+user_touched_screen_flag=False
+
