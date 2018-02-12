@@ -6,13 +6,6 @@ import time
 import SerialConnection
 from enum import Enum
 
-# timeouts in seconds for  the Arduino serial commands    
-ARDUINO_COMMAND_TIMEOUT = 5  # wait 5 seconds for response, before declaring bad communictions
-TIME_IT_TAKES_TO_DETECT_SWITCH =20  # wait 20 seconds to measure the impedance, before erroring out
-# hardware pins used in the arduino              
-hardware_const.MAINPOWER_RELAY_PIN=10 
-hardware_const.SENSE_RELAY_PIN=9
-hardware_const.ESTOP_RELAY_PIN=8
 # pins for impedance measurement are hard wired in arduino code. 
 
 #  PUBLIC STUFF-------------------- 
@@ -148,17 +141,17 @@ class ArdCommandResponse:
             if self.state== ComResState.READY:
                 if command=='imp':
                     self.serport.send_command("+++ imp \r\n")
-                    timeout=TIME_IT_TAKES_TO_DETECT_SWITCH
+                    timeout=timing_constants.TIME_IT_TAKES_TO_DETECT_SWITCHT
                 elif command=='write':
                     s=    ("+++ write "+str(pin)+" "+str(writeval)+"\r\n")
                     self.serport.send_command(s); 
-                    timeout=ARDUINO_COMMAND_TIMEOUT
+                    timeout=timing_constants.ARDUINO_COMMAND_TIMEOUT
                 elif command == 'read':
                     self.serport.send_command("+++ read "+ str(pin) + "\r\n");  
-                    timeout=ARDUINO_COMMAND_TIMEOUT                     
+                    timeout=timing_constants.ARDUINO_COMMAND_TIMEOUT                     
                 elif command== 'analogRead':
                     self.serport.send_command("+++ analogRead "+ str(pin) + "\r\n");  
-                    timeout=ARDUINO_COMMAND_TIMEOUT
+                    timeout=timing_constants.ARDUINO_COMMAND_TIMEOUT
                 else:
                     print("ERROR, in ArdCommandResponse. called initiate_arduino_command with incorrect arguments")
                     self.state=ComResState.ERROR
