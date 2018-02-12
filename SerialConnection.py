@@ -106,10 +106,10 @@ class SerialClass():
     def send_imp_request(self):
         self.send_command("+++ imp \r\n")
     def relay_mainpowerOFF(self):   
-        s=    ("+++ write "+str(MAINPOWER_RELAY_PIN)+" 1 \r\n")
+        s=    ("+++ write "+str(hardware_const.MAINPOWER_RELAY_PIN)+" 1 \r\n")
         self.send_command(s); 
     def relay_mainpowerON(self) :       
-        self.send_command("+++ write "+str(MAINPOWER_RELAY_PIN)+" 0 \r\n");       
+        self.send_command("+++ write "+str(hardware_const.MAINPOWER_RELAY_PIN)+" 0 \r\n");       
     def close(self):
         return serial.Serial.close(self.ser)
         
