@@ -3,22 +3,22 @@ import SerialConnection
 import DataBase
 import DisplayStuff
 import tkinter as tk
-global machineID
-machineID=12345
+global globs.machineID
+globs.machineID=12345
 DATABASE_QUERY_TIMEOUT=50
-DISPLAY_DELAY=3
+timing_constants.DISPLAY_DELAY=3
 
-user_name="John Doe"
-user_time_of_access=30
-user_supervisor="John Kostman"
+globs.user_name="John Doe"
+globs.user_time_of_access=30
+globs.user_supervisor="John Kostman"
 def minutes_display(seconds):
     min=seconds//60
     sec=seconds-min*60
     return str(min)+":"+str(sec)
     
 def mainloop(state,first_time_here_flag):
-    global user_name
-    global user_time_of_access
+    global globs.user_name
+    global globs.user_time_of_access
     
     if (state==IDLE):
         if (first_time_here_flag==True):
@@ -36,7 +36,7 @@ def mainloop(state,first_time_here_flag):
             Dis.display_message_to_user('',3)
             Dis.display_message_to_user('',4)
             Dis.display_message_to_user('',5)
-            Data.query(cardID,machineID)
+            Data.query(cardID,globs.machineID)
             state=WAIT_FOR_FIRST_DATABASE_RESPONSE ; first_time_here_flag=True;
         return (state,first_time_here_flag) 
     #---------------------------------------------------------
@@ -46,8 +46,8 @@ def mainloop(state,first_time_here_flag):
             first_time_here_flag=False;
         if (Data.query_result_available()):
             timeoutTimer1.reset()
-            (user_name,access_result,reason,user_supervisor,user_time_of_access)=Data.get_database_response()
-            Dis.display_message_to_user(user_name,1);
+            (globs.user_name,access_result,reason,globs.user_supervisor,globs.user_time_of_access)=Data.get_database_response()
+            Dis.display_message_to_user(globs.user_name,1);
             if (access_result=='DENIED'):
                 Dis.display_message_to_user('ACCESS DENIED',2)
                 if (reason):
@@ -88,7 +88,7 @@ def mainloop(state,first_time_here_flag):
 #--------------------------------------------------------------              
     if (state==WAIT_TO_RESET):    
         if (first_time_here_flag==True):
-            timeoutTimer1.set_time(DISPLAY_DELAY)
+            timeoutTimer1.set_time(timing_constants.DISPLAY_DELAY)
             first_time_here_flag=False;
         if (timeoutTimer1.timed_out()):
             state=IDLE; first_time_here_flag=True;
@@ -118,15 +118,15 @@ def mainloop(state,first_time_here_flag):
     #----------------------------------------------------------------        
     if (state==TIMEING_ACCESS):        
         if (first_time_here_flag==True):
-            Dis.display_message_to_user(user_name,1)
+            Dis.display_message_to_user(globs.user_name,1)
             Dis.display_message_to_user('Has access for',2)
-            timeoutTimer1.set_time(user_time_of_access);
-            Dis.display_message_to_user(minutes_display(user_time_of_access),3);
+            timeoutTimer1.set_time(globs.user_time_of_access);
+            Dis.display_message_to_user(minutes_display(globs.user_time_of_access),3);
             Dis.display_message_to_user('Minutes',4)
             first_time_here_flag=False
         if (timeoutTimer1.secondstick()):
             Dis.display_message_to_user(minutes_display(timeoutTimer1.get_timeleft()),3)
-        if (timeoutTimer1.get_timeleft()<=user_time_of_access//5):
+        if (timeoutTimer1.get_timeleft()<=globs.user_time_of_access//5):
                 state=EXTEND_TIME_PROMPT; first_time_here_flag=True
         if (timeoutTimer1.timed_out()):
             state=IDLE; first_time_here_flag=True;        
@@ -136,7 +136,7 @@ def mainloop(state,first_time_here_flag):
         if (first_time_here_flag==True):
             SerConn.cardID_avalable=False; 
             Dis.display_message_to_user('You can now extend access ',5)
-            timeoutTimer1.set_time(user_time_of_access//5)
+            timeoutTimer1.set_time(globs.user_time_of_access//5)
             first_time_here_flag=False
         if (timeoutTimer1.secondstick()):
             Dis.display_message_to_user(minutes_display(timeoutTimer1.get_timeleft()),3)
@@ -147,7 +147,7 @@ def mainloop(state,first_time_here_flag):
             Dis.display_message_to_user('',3)
             Dis.display_message_to_user('',4)
             Dis.display_message_to_user('',5)
-            Data.query(cardID,machineID)
+            Data.query(cardID,globs.machineID)
             state=WAIT_FOR_FIRST_DATABASE_RESPONSE ; first_time_here_flag=True;
         if (timeoutTimer1.timed_out()):
             state=IDLE; first_time_here_flag=True;

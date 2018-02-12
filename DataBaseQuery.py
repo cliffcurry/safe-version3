@@ -22,8 +22,8 @@ class DataBaseQuery:  #pass it the database class, which has query, avalible fun
         self.request_machineID="45677"
         self.val=None
         
-    def query(self,cardID,machineID):
-        self.database.query(cardID,machineID)  # send a query out to the database
+    def query(self,cardID,globs.machineID):
+        self.database.query(cardID,globs.machineID)  # send a query out to the database
        
     def query_result_available(self):
         return self.database.query_result_available()
@@ -52,12 +52,12 @@ class DataBaseQuery:  #pass it the database class, which has query, avalible fun
             print('In db_req_response, reporting database error')
             return False,None
             
-    def db_request(self,cardID,machineID): 
+    def db_request(self,cardID,globs.machineID): 
         self.DATABASE_TIMEOUT_TIME=10
         self.request_cardID=cardID
-        self.request_machineID=machineID
+        self.request_machineID=globs.machineID
         if  self.dbst == stEnum.READY:    # beginning of the state machine
-            self.query(cardID,machineID)        # send a query to data base
+            self.query(cardID,globs.machineID)        # send a query to data base
             self.tmer.set_time(self.DATABASE_TIMEOUT_TIME)   # set a timeout timer
             self.dbst=stEnum.SENT_REQUEST # update the state
             return True

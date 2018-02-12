@@ -8,9 +8,9 @@ class DataBase():
         self.delay_expired=False
         self.tmer=timeoutTimer.timeoutTimer()
         
-    def query(self,cardID,machineID):
+    def query(self,cardID,globs.machineID):
         self.cardID=cardID  #save card Id
-        self.machineID=machineID    #save machine id
+        self.globs.machineID=globs.machineID    #save machine id
 
         self.tmer.set_time(4)   # sets the delay between a request is sent and this program return the result 
         
@@ -22,7 +22,7 @@ class DataBase():
             return True
         
     def get_database_response(self):
- # (user_name,user_access_result,reason,user_supervisor,user_time_of_access)
+ # (globs.user_name,globs.user_access_result,reason,globs.user_supervisor,globs.user_time_of_access)
         if self.cardID == "0080486":
             name="Clifford Curry"
             access_result="IS_SUPERVISOR"
