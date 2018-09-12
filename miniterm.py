@@ -28,8 +28,8 @@ except NameError:
     unichr = chr
 
 
-def key_description(character):
-    """generate a readable description for a key"""
+def key_name(character):
+    """generate a readable name for a key"""
     ascii_code = ord(character)
     if ascii_code < 32:
         return 'Ctrl+{:c}'.format(ord('@') + ascii_code)
@@ -576,7 +576,7 @@ class Miniterm(object):
             self.serial.rtscts = (c == 'R')
             self.dump_port_settings()
         else:
-            sys.stderr.write('--- unknown menu character {} --\n'.format(key_description(c)))
+            sys.stderr.write('--- unknown menu character {} --\n'.format(key_name(c)))
 
     def upload_file(self):
         """Ask user for filenname and send its contents"""
@@ -691,7 +691,7 @@ class Miniterm(object):
         do_change_port = False
         while not self.serial.is_open:
             sys.stderr.write('--- Quit: {exit} | p: port change | any other key to reconnect ---\n'.format(
-                exit=key_description(self.exit_character)))
+                exit=key_name(self.exit_character)))
             k = self.console.getkey()
             if k == self.exit_character:
                 self.stop()             # exit app
@@ -738,17 +738,17 @@ class Miniterm(object):
 ---    x X        disable/enable software flow control
 ---    r R        disable/enable hardware flow control
 """.format(version=getattr(serial, 'VERSION', 'unknown version'),
-           exit=key_description(self.exit_character),
-           menu=key_description(self.menu_character),
-           rts=key_description('\x12'),
-           dtr=key_description('\x04'),
-           brk=key_description('\x02'),
-           echo=key_description('\x05'),
-           info=key_description('\x09'),
-           upload=key_description('\x15'),
-           repr=key_description('\x01'),
-           filter=key_description('\x06'),
-           eol=key_description('\x0c'))
+           exit=key_name(self.exit_character),
+           menu=key_name(self.menu_character),
+           rts=key_name('\x12'),
+           dtr=key_name('\x04'),
+           brk=key_name('\x02'),
+           echo=key_name('\x05'),
+           info=key_name('\x09'),
+           upload=key_name('\x15'),
+           repr=key_name('\x01'),
+           filter=key_name('\x06'),
+           eol=key_name('\x0c'))
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -760,7 +760,7 @@ def main(default_port=None, default_baudrate=9600, default_rts=None, default_dtr
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="Miniterm - A simple terminal program for the serial port.")
+        name="Miniterm - A simple terminal program for the serial port.")
 
     parser.add_argument(
         "port",
@@ -956,10 +956,10 @@ def main(default_port=None, default_baudrate=9600, default_rts=None, default_dtr
         sys.stderr.write('--- Miniterm on {p.name}  {p.baudrate},{p.bytesize},{p.parity},{p.stopbits} ---\n'.format(
             p=miniterm.serial))
         sys.stderr.write('--- Quit: {} | Menu: {} | Help: {} followed by {} ---\n'.format(
-            key_description(miniterm.exit_character),
-            key_description(miniterm.menu_character),
-            key_description(miniterm.menu_character),
-            key_description('\x08')))
+            key_name(miniterm.exit_character),
+            key_name(miniterm.menu_character),
+            key_name(miniterm.menu_character),
+            key_name('\x08')))
 
     miniterm.start()
     try:

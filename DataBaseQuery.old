@@ -1,0 +1,131 @@
+# interface to the data base.  
+# program that timeouts the database queries
+
+
+# use like this: 
+
+# five routines are supplied here: proxcard->person, interlock->machine, machine table, lab table, person table 
+# call these routines in a loop, checking their return values.
+#  They return NONE while they are working, True when they are successful, and False if there is a error.
+# When they return True, they also return the data from the tables in a second variable. 
+
+# names of the tables in the database are  "machineInfo","personInfo", "labInfo","proxcardlookup","interlocklookup"
+
+
+# the database, wheather real or fake, must export these three routines 
+#   query(table,key) returns nothing
+#   query_result_available()  returns true or false
+#   get_database_response()   returns the table row that was requested
+import timing_constants
+import timeoutTimer
+import DataBaseV3
+from enum import Enum
+
+
+
+
+
+class DataBaseQuery:  #pass it the database class, which has query, available functions built into it. 
+ 
+    
+    class stEnum(Enum):
+
+        READY=0
+        SENT_REQUEST =2
+        DONE = 5
+        ERROR = 6
+      
+    def __init__(self,db):
+        
+        self.database=db
+     
+      
+    # the following routines are made avaliable to outside programs.....
+        #  a routine can be called many times, it is non-blaocking.  it returns a tuple
+        #  the first entry is TRUE, FALSE, NONE.   
+            # if it returns TRUE, the second entry is valid., you can proceed 
+            # if it returns NONE... the answer is not known yet, you must call the routine again
+            # if it returns FALSE, there has been some error... perhaps a timeout or something. you can proceed and handle the error  
+      
+      
+    # def proxcardlookup(self,ID):
+       # return(self.db_req_response("proxcardlookup",ID))
+    # def interlocklookup(self,ID):
+        # return(self.db_req_response("interlocklookup",ID))
+    # def labInfo(self,ID):
+        # return(self.db_req_response("labInfo",ID))
+    # def machineInfo(self,ID):
+        # return(self.db_req_response("machineInfo",ID))    
+    # def personInfo(self,ID):
+        # return(self.db_req_response("personInfo",ID)) 
+    def second_swipe(self,ID,ID2,ID3):
+        (OK,reason)=self.database.second_swipe(ID,ID2,ID3)
+        return(OK,reason) 
+    def first_swipe(self,ID,ID2):
+        (OK,reason)=self.database.first_swipe(ID,ID2)
+        return(OK,reason) 
+    def info_from_mac(self,mac):
+        return(self.database.info_from_mac(mac))
+          #return self.database.NEW_Inter_Machine_Lab_INFO
+    def info_from_prox(self,prox):
+        self.database.info_from_prox(prox)
+        return self.database.NEW_Person
+    
+   # implementing a state machine to do database queries:    this routine has a state variable that it increments or not depending on what's going on. 
+   #  returns TRue FALSE, OR NONE, as well as the data  
+        
+    # def db_req_response(self,table,key,prox2='0898',maccad='098797'):
+        
+        # if self.dbst==self.stEnum.READY:   # initial state, first time its called we are here.. 
+            # self.database.query(table,key,prox2,maccad)   #  this queries the database with the table and the key . allowable tables are "machineInfo","personInfo", "labInfo","proxcardlookup","interlocklookup" 
+            # # print('queried the database')
+            # self.tmer.set_time(timing_constants.DATABASE_TIMEOUT_SECONDS)  # set the timeout timer 
+            # self.dbst=self.stEnum.SENT_REQUEST   # incremet the state variable 
+            
+            # return None,None  # we are not done, that's the first NONE, and there is no data: that's the second none
+        # elif    self.dbst == self.stEnum.SENT_REQUEST: # second stage of state machine
+            # if self.tmer.timed_out():               # if timed out, there has been no response
+                # print('In db_req_response, timeout, (set to ',timing_constants.DATABASE_TIMEOUT_SECONDS," seconds )" )
+                # self.dbst=self.stEnum.ERROR;
+            # elif self.database.query_result_available():   # this returns true or false, depending of the database has good data ready
+                # self.val=self.database.get_database_response(); # this call to the database actually returns the data. 
+                # self.dbst=self.stEnum.DONE    #  so, all things were OK here, reset stuff and get ready for another query
+            # return None,None        
+        # elif    self.dbst==self.stEnum.DONE:     # finish up
+            # self.dbst=self.stEnum.READY   # reset state variable
+            # return True,self.val        # return TRUE and the data 
+        # elif  self.dbst== self.stEnum.ERROR: # finish up 
+            # self.dbst=self.stEnum.READY   #  reset state variable, but likely this is fatal
+            # print('In db_req_response, reporting database error')
+            # return False,None    # return error status
+            
+       
+        
+if  __name__ == "__main__": 
+    print('HI there') 
+    dfake=DataBaseV3.DataBase()    
+    d=DataBaseQuery(dfake)
+    mmac='74:46:a0:96:db:d2'
+    
+    stuff=d.info_from_mac(mmac)
+    
+    print(stuff)
+    morestuff=d.info_from_prox("0080486")
+    print(morestuff)
+    
+    (OK,reason)=d.first_swipe("0080486",mmac)
+    print(OK)
+    print(reason)
+
+
+    OK,val=d.second_swipe("0080486","0090031",mmac)
+    print(OK)
+    print(reason)
+               
+
+    print('program is over')
+    quit()
+        
+    
+        
+       

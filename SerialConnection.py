@@ -1,5 +1,6 @@
 import serial
 import io
+import hardware_const
 
 import time
 
@@ -16,9 +17,9 @@ class SerialClass():
     
     def __init__(self):
         #self.ser = serial.Serial('/dev/tty.usbserial', 9600,timeout=1)
-        self.ser = serial.Serial('/dev/ttyUSB0', 9600)  ### read() will return bad data if the baudrate is incorrect
+        #self.ser = serial.Serial('/dev/ttyUSB0', 9600)  ### read() will return bad data if the baudrate is incorrect
         #self.ser.baudrate = 115200
-        #self.ser = serial.Serial('COM4', 9600) 
+        self.ser = serial.Serial('COM9', 9600) 
         self.global_partial_line="";
         self.cardID_available=False
         self.commandResponse_available=False
@@ -35,7 +36,8 @@ class SerialClass():
         out_line=self.global_partial_line  # each time this routine is entered, initialize the output to the temp store
         while self.ser.in_waiting: # do this over and over again until there is nothing waiting
             c=self.ser.read()   # by defult, reads one byte
-            c=str(c.decode("utf-8")) # input is a byte string, different than a string, so must be decoded into a string. 
+            
+            c=str(c.decode("utf-8","replace")) # input is a byte string, different than a string, so must be decoded into a string. 
             if  c == '\n':  # string-string comparison here.  Python alows compare of different types, always will fail on equality. 
                 self.global_partial_line="";  # reset temp storag
                 return(out_line)  # returns the line, que is not empty, partial line is reset to empty string

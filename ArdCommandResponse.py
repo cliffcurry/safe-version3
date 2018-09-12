@@ -9,16 +9,21 @@ from enum import Enum
 # pins for impedance measurement are hard wired in arduino code. 
 
 #  PUBLIC STUFF-------------------- 
-#def send_imp_request()
-#def send_relay_mainpowerOFF()   
-#def send_relay_mainpowerON()       
-#def send_relay_senseON()   
-#def send_relay_senseOFF()      
-#def send_clear_estop_relay_actuate()
-#def send_clear_estop_relay_deenergize()
+#def turn_off_device() returns True=sucess, False=failure, None=working .Turns off power relay, estop relay, and sense relay
+#def turn_on_device()   returns True=sucess, False=failure, None=working .Turns on power relay and estop relay
+#def complete_impedance_measure()  returns (state,value) , state= True=sucess, False=failure, None=working. value=impedance in ohms
+#-------------------------------------------- functions for more low level stuff
+
+#def turn_off_sense_relay()  returns True=sucess, False=failure, None=working 
+#def turn_on_sense_relay()     returns True=sucess, False=failure, None=working
+#def read_impedance(): returns True=sucess, False=failure, None=working. impedance in ohms 
+
+
 # def Arduino_command_response_OK()
-
-
+ 
+   
+       
+   
 
 
 # command response state defintion.... 
@@ -28,25 +33,20 @@ class ComResState(Enum):
         SENT_COMMAND =2
         RECEIVED_RESPONSE =3
         ERROR = 6
-        
+   
  # arduino command response dance.... send a command, then  wait to see if the response is correct
  # arduino commands are "read", "write", "analogRead", or "imp"
  # serial_instance is a serial port instantiation from SerialConnection module   
 class ArdCommandResponse:
-    
+       
 
-    def __init__(self,serial_instance):
-        self.serport=serial_instance
-        # define some variables that are persistent  to the instance 
-        self.retval=6   # a number.  value, for reads, is an actual value.   for writes is either 1 or 0 
-        self.state=ComResState.READY   # initialize the state
-        self.timeoutTimer2=timeoutTimer.timeoutTimer()   # create a timout timer to use for serial commands
  
     def __init__(self,serial_instance):
         self.serport=serial_instance
         # define some variables that are persistent  to the instance 
         self.retval=6   # a number.  value, for reads, is an actual value.   for writes is either 1 or 0 
         self.state=ComResState.READY   # initialize the state
+        #print(" intialize state to ",self.state)
         self.timeoutTimer2=timeoutTimer.timeoutTimer()   # create a timout timer to use for serial commands
  
 #--------------------------------------------------------------------------------
@@ -84,8 +84,12 @@ class ArdCommandResponse:
                 print('ERROR, command expected ', readwrite," ",pinstring," ",onezero," but received " ,par_tuple)
                 print('command letter is incorrect')
             return(state,retval)  # end of the aux funtion 
+#-----------------------------------------------------------------------------------            
+        #print("Arduino command response state is=",self.state)    
 #-----------------------------------------------------------------------------------                        
         if self.state == ComResState.READY: # do nothing state
+             self.state=ComResState.SENT_COMMAND
+             #print("In Ardino command Response OK, state was ready, is now sent command")
              return(None,None)
 #---------------------------------------------------------------------------------
         elif self.state == ComResState.SENT_COMMAND:
@@ -118,7 +122,8 @@ class ArdCommandResponse:
             return(None,self.retval)
 #----------------------------------------------------------------------------            
         elif self.state == ComResState.RECEIVED_RESPONSE: # means we are finished with a sucessful dance 
-            self.state=ComResState.READY; 
+            self.state=ComResState.READY
+            #print("in ArdCommandResponse, success, return true and state set back to ", self.state)
             return(True,self.retval)
 #----------------------------------------------------------------------------   
         elif self.state == ComResState.ERROR:    # means we are finished with an unsucessful dance
@@ -140,23 +145,28 @@ class ArdCommandResponse:
             self.retval = None   # this value is overwritten later, it is superstitius behavior to set it here 
             if self.state== ComResState.READY:
                 if command=='imp':
-                    self.serport.send_command("+++ imp \r\n")
-                    timeout=timing_constants.TIME_IT_TAKES_TO_DETECT_SWITCHT
+                    s=("+++ imp \r\n")
+                    self.serport.send_command(s)
+                    timeout=timing_constants.TIME_IT_TAKES_TO_DETECT_SWITCH
                 elif command=='write':
                     s=    ("+++ write "+str(pin)+" "+str(writeval)+"\r\n")
                     self.serport.send_command(s); 
                     timeout=timing_constants.ARDUINO_COMMAND_TIMEOUT
                 elif command == 'read':
-                    self.serport.send_command("+++ read "+ str(pin) + "\r\n");  
+                    s=("+++ read "+ str(pin) + "\r\n")
+                    self.serport.send_command(s);  
                     timeout=timing_constants.ARDUINO_COMMAND_TIMEOUT                     
                 elif command== 'analogRead':
-                    self.serport.send_command("+++ analogRead "+ str(pin) + "\r\n");  
+                    s="+++ analogRead "+ str(pin) + "\r\n"
+                    self.serport.send_command(s);  
                     timeout=timing_constants.ARDUINO_COMMAND_TIMEOUT
                 else:
                     print("ERROR, in ArdCommandResponse. called initiate_arduino_command with incorrect arguments")
                     self.state=ComResState.ERROR
                     return False  #signifies an error condition 
-                self.timeoutTimer2.set_time(timeout)     
+                self.timeoutTimer2.set_time(timeout) 
+                #print(" Arduino command initated=",s); 
+                #print(" state was ready, is now set to sent command");
                 self.state = ComResState.SENT_COMMAND
                 return True # signfies succcessful execution of this function 
             else:
@@ -164,28 +174,6 @@ class ArdCommandResponse:
                 self.state= ComResState.READY
                 return False  #signifies an error condition 
   
-#   HERE ARE THE PUBLIC FUNCTIONS 
-     
-    def send_imp_request(self):
-        OK =self.initiate_arduino_command('imp','0','0')
-        return OK
-   
-    def send_relay_mainpowerON(self) :       
-        OK=self.initiate_arduino_command("write",str(self.MAINPOWER_RELAY_PIN),"0")          
-        return OK    
-    def send_relay_senseON(self):   
-        OK = self.initiate_arduino_command("write",str(hardware_const.SENSE_RELAY_PIN),"0")
-        return OK
-    def send_relay_senseOFF(self) :       
-        OK=self.initiate_arduino_command("write",str(hardware_const.SENSE_RELAY_PIN),"1")          
-        return OK 
-    def send_clear_estop_relay_actuate(self):   
-        OK = self.initiate_arduino_command("write",str(hardware_const.ESTOP_RELAY_PIN),"0")
-        return OK
-    def send_clear_estop_relay_deenergize(self) :       
-        OK=self.initiate_arduino_command("write",str(hardware_const.ESTOP_RELAY_PIN),"1")          
-        return OK
-
 
     class auxState(Enum):
 
@@ -193,37 +181,64 @@ class ArdCommandResponse:
         SENT_COMMAND =2
         RECEIVED_RESPONSE =3
         ERROR = 6
- 
- 
-    # returns True-> the command was sent and replied to, False-> there was some error condition, None-> The device is not yet off       
-
-
-    def command_dance1(self,commandfunction):
-        retval=None
-        if self.auxstate==auxState.READY:  # if in appropriate state
+    auxstate=auxState.READY; readval=None
+    def read_sequence(self,commandfunction):
+        retval=None ; 
+        #print(" entering  command dance, auxstate is ",self.auxstate)
+        if self.auxstate==self.auxState.READY:  # if in appropriate state
             OK = commandfunction()  # send the command to the arduino
+            #print("sent command to arduino")
             if not OK:
                 print("error in sending command to arduino, in command dance")
-                self.auxstate==auxState.ERROR
+                self.auxstate==self.auxState.ERROR
             else:
-                self.auxstate=auxState.SENT_COMMAND     
-        elif self.auxstate==auxState.SENT_COMMAND: # listen for  result
-            OK=self.Arduino_command_response_OK
+                self.auxstate=self.auxState.SENT_COMMAND   
+                #print("response was ",OK)
+                #print("auxstate set to", self.auxstate)
+        elif self.auxstate==self.auxState.SENT_COMMAND: # listen for  result
+            (OK,self.readval)=self.Arduino_command_response_OK()
+            #print (" in command dance, arduino command response OK returns ",OK)
             if OK==True:
-                self.auxstate=auxState.RECEIVED_RESPONSE
+                self.auxstate=self.auxState.RECEIVED_RESPONSE
             elif OK==False:
                 print("error in response from arduino to command request") 
-                self.auxstate==auxState.ERROR
+                self.auxstate==self.auxState.ERROR
             # third possiblity is OK is none, which means the command is not done yet      
-        elif self.auxstate==auxState.RECEIVED_RESPONSE: # all is good, the command is complete
-            self.auxstate=auxState.READY
+        elif self.auxstate==self.auxState.RECEIVED_RESPONSE: # all is good, the command is complete
+            self.auxstate=self.auxState.READY
             retval= True    
-        elif self.auxstate==auxState.ERROR:  #  there has been a communication error
+        elif self.auxstate==self.auxState.ERROR:  #  there has been a communication error
             print("FATAL ERROR in the command dance")
             time.sleep(50)
-            self.auxstate=auxState.READY
+            self.auxstate=self.auxState.READY
             retval= False
-        return retval        
+        return (retval,self.readval)
+ 
+    # returns True-> the command was sent and replied to, False-> there was some error condition, None-> The device is not yet off       
+    
+
+    def write_sequence(self,commandfunction):
+        (OK,value)=self.read_sequence(commandfunction)
+        return OK
+    def turn_on_sense_relay(self):    
+        done=self.write_sequence(lambda: self.initiate_arduino_command("write",str(hardware_const.SENSE_RELAY_PIN),"0")    )  
+        return done
+        
+    def turn_off_sense_relay(self):    
+        done=self.write_sequence(lambda: self.initiate_arduino_command("write",str(hardware_const.SENSE_RELAY_PIN),"1")    )  
+        return done 
+        
+    
+        
+    def read_impedance(self):    
+        (retval,val)=self.read_sequence(lambda: self.initiate_arduino_command('imp','0','0'))
+        return (retval,val)         
+        
+        
+        
+        
+        
+        
     # turns off the device by sending three commands to the arduino.        
     class bigState(Enum):
         BEGIN=0
@@ -232,39 +247,142 @@ class ArdCommandResponse:
         THIRD_ONE=3
         SUCCESS=4
         ERROR = 6
-        
+    mult_state=bigState.BEGIN   
+    
     def turn_off_device(self):
         retval=None
-        if mult_state==bigState.BEGIN:
-            mult_state=bigstate.FIRST_ONE
-        elif mult_state==bigState.FIRST_ONE:
-            done=command_dance1(self,lambda: self.initiate_arduino_command("write",str(hardware_const.MAINPOWER_RELAY_PIN),"1")     )
+        # print("turn off device state=",self.mult_state)
+        if self.mult_state==self.bigState.BEGIN:
+            self.mult_state=self.bigState.FIRST_ONE
+        elif self.mult_state==self.bigState.FIRST_ONE:
+            done=self.write_sequence(lambda: self.initiate_arduino_command("write",str(hardware_const.MAINPOWER_RELAY_PIN),"1")     )
             if done==True:
-                mult_state=bigState.SECOND_ONE
+                self.mult_state=self.bigState.SECOND_ONE
             elif done==False:
-                mult_state=bigState.ERROR
-        elif mult_state==bigState.SECOND_ONE:
-            done=command_dance1(self,lambda: self.initiate_arduino_command("write",str(hardware_const.ESTOP_RELAY_PIN),"1")   )
+                self.mult_state=self.bigState.ERROR
+        elif self.mult_state==self.bigState.SECOND_ONE:
+            done=self.write_sequence(lambda: self.initiate_arduino_command("write",str(hardware_const.ESTOP_RELAY_PIN),"1")   )
             if done==True:
-                mult_state=bigState.THIRD_ONE
+                self.mult_state=self.bigState.THIRD_ONE
             elif done==False:
-                mult_state=bigState.ERROR 
-        elif mult_state==bigState.THIRD_ONE:
-            done=command_dance1(self,lambda: self.initiate_arduino_command("write",str(hardware_const.SENSE_RELAY_PIN),"1")   )
+                self.mult_state=self.bigState.ERROR 
+        elif self.mult_state==self.bigState.THIRD_ONE:
+            done=self.write_sequence(lambda: self.initiate_arduino_command("write",str(hardware_const.SENSE_RELAY_PIN),"1")   )
             if done==True:
-                mult_state=bigState.SUCCESS
+                self.mult_state=self.bigState.SUCCESS
             elif done==False:
-                mult_state=bigState.ERROR 
-        elif mult_state==bigState.SUCCESS:
+                self.mult_state=self.bigState.ERROR 
+        elif self.mult_state==self.bigState.SUCCESS:
             retval=True
-            mult_state=bigState.BEGIN
-        elif mult_state==bigState.ERROR:
+            self.mult_state=self.bigState.BEGIN
+        elif self.mult_state==self.bigState.ERROR:
             retval=False;
             print("ERROR turn device off failed")
             time.sleep(20)
-            mult_state=bigState.BEGIN
+            self.mult_state=self.bigState.BEGIN
         return retval
+
+# turns on the device by sending two commands to the arduino.    
+
+    def turn_on_device(self):
+        retval=None
+        if self.mult_state==self.bigState.BEGIN:
+            self.mult_state=self.bigState.FIRST_ONE
+        elif self.mult_state==self.bigState.FIRST_ONE:
+            done=self.write_sequence(lambda: self.initiate_arduino_command("write",str(hardware_const.MAINPOWER_RELAY_PIN),"0")     )
+            if done==True:
+                self.mult_state=self.bigState.SECOND_ONE
+            elif done==False:
+                self.mult_state=self.bigState.ERROR
+        elif self.mult_state==self.bigState.SECOND_ONE:
+            done=self.write_sequence(lambda: self.initiate_arduino_command("write",str(hardware_const.ESTOP_RELAY_PIN),"0")   )
+            if done==True:
+                self.mult_state=self.bigState.SUCCESS
+            elif done==False:
+                self.mult_state=self.bigState.ERROR 
+        elif self.mult_state==self.bigState.SUCCESS:
+            retval=True
+            self.mult_state=self.bigState.BEGIN
+        elif self.mult_state==self.bigState.ERROR:
+            retval=False;
+            print("ERROR turn device on failed")
+            time.sleep(20)
+            self.mult_state=self.bigState.BEGIN
+        return retval
+
+    class impState(Enum):
+        BEGIN=0
+        DEVICE_OFF =1
+        SENSE_ON=2
+        IMP_MEAS=3
+        SENSE_OFF=4
+        SUCCESS=5
+        ERROR = 6
+    imp_state=impState.BEGIN ;ohms_measure=None
+
+    def complete_impedance_measure(self):
+        retval=None
+        # turn off the device 
+        if self.imp_state==self.impState.BEGIN:
+            OK=self.turn_off_device()
+            if OK==False:
+                print("in imp meas, Starting the sequence.. but, turnoff of device failed")
+                self.imp_state=self.impState.ERROR
+            elif OK==True:
+                self.imp_state=self.impState.DEVICE_OFF
+                print('in impedance, Starting the sequence: device is off')
+        elif self.imp_state==self.impState.DEVICE_OFF:
+            # turn on the sense relay
+            OK=self.turn_on_sense_relay()
+            if OK==False:
+                print("in imp meas, turn on of sense relay failed")
+                self.imp_state=self.impState.ERROR
+            elif OK==True:
+                self.imp_state=self.impState.IMP_MEAS
+                print('in impedance, sense relay  is on')
+        elif self.imp_state==self.impState.IMP_MEAS:
+            # do the impedance measurement
+            (OK,self.ohms_measure)=self.read_impedance()
+            if OK==False:
+                print("in imp meas, arduino imp command failed")
+                self.imp_state=self.impState.ERROR
+            elif OK==True:
+                self.imp_state=self.impState.SENSE_OFF
+                print('in impedance, measurement succeeded')
+        elif self.imp_state==self.impState.SENSE_OFF:
+            # turn off the sense relay
+            OK=self.turn_off_sense_relay()
+            if OK==False:
+                print("in imp meas, sense relay off failed")
+                self.imp_state=self.impState.ERROR
+            elif OK==True:
+                self.imp_state=self.impState.SUCCESS
+                print("in imp meas, sense relay  is off")
+        elif self.imp_state==self.impState.SUCCESS:
+            print("impedance measurement complete");
+            retval=True
+            self.imp_state=self.impState.BEGIN
+        elif self.imp_state==self.impState.ERROR:
+            print("impedance measurement failed");
+            time.sleep(10)
+            self.imp_state=self.impState.BEGIN
+            retval=False           
+        return(retval,self.ohms_measure)
             
+        
+        
+        
+      
+
+
+
+
+
+
+
+
+
+        
 if  __name__ == "__main__": 
     print('HI there')     
     # define the serial port 
@@ -284,7 +402,7 @@ if  __name__ == "__main__":
             stophere=False
     print('Arduino is alive ')   
 
-    s1=1; s2=2; s3=3; s4=4; s5=5;s6=6; s7=7; s8=8; s9=9 ; s10=10; s11=11; s88=88; serr=12; sfinal=99;
+    s1=1; s2=2; s3=3; s4=4; s5=5;s6=6; s7=7; s8=8; s9=9 ; s10=10; s11=11; s88=88; serr=12; sfinal=99; sxx=76; sxu=46;
     
     mainstate=s1
     while True:     
@@ -294,53 +412,49 @@ if  __name__ == "__main__":
             print("cardID=",sport.get_cardID())
         if sport.alive_available:
             print("alive=",sport.get_alive()) 
-            
+           
         if mainstate==s1:
-            OK=ACommandProc.send_imp_request()
-            if not OK:
-                print(' ERROR in call')
-                mainstate=serr 
-            else:
-                mainstate=s2
+            #print("Test the read sequence") 
+            (OK,val)=ACommandProc.read_sequence(lambda: ACommandProc.initiate_arduino_command("read","4","0"))
+            if OK:
+                 print('reading of pin 4 is   ',val)
+                 mainstate=s2
+            elif OK==False:
+                print('ERROR  with response from the arduino to a read  request, state=',mainstate)
+                mainstate=serr
+     
         elif mainstate==s2:
-            OK,val=ACommandProc.Arduino_command_response_OK()
-            if OK:
-                 print('imp response is  ',val)
-                 mainstate=s3
+            #print("Test the write sequence") 
+            OK=ACommandProc.write_sequence(lambda: ACommandProc.initiate_arduino_command("write",str(hardware_const.MAINPOWER_RELAY_PIN),"1")     )
+            if OK == True:
+                print(' sucess in main relay off')
+                mainstate=sxx
             elif OK==False:
-                print('ERROR  with response from the arduino to a good request')
+                print("ERROR in main relay  TURNING OFF, STATE=",mainstate)
                 mainstate=serr
-        elif mainstate==s3:
-            OK=ACommandProc.send_relay_mainpowerON()
-            if not OK:
-                print(' ERROR in call')
-                mainstate=serr
-            else:
-                mainstate=s4
-        elif mainstate==s4:
-            OK,val=ACommandProc.Arduino_command_response_OK()
-            if OK:
-                 print('write response is OK in state ',mainstate)
-                 mainstate=s5
-            elif OK==False:
-                print('ERROR  with response from the arduino to a good request')
-                mainstate=serr
-        elif mainstate==s5:
-            OK=ACommandProc.send_relay_mainpowerOFF()
-            if not OK:
-                print(' ERROR in call')
-                mainstate=serr
-            else:
+       
+        elif mainstate==sxx:
+            #print("Test the power off ")
+            OK=ACommandProc.turn_off_device()
+            if OK == True:
+                print(' sucess in turning off device')
                 mainstate=s6
-        elif mainstate==s6:
-            OK,val=ACommandProc.Arduino_command_response_OK()
-            if OK:
-                 print('write response is OK in state ',mainstate)
-                 mainstate=s7
             elif OK==False:
-                print('ERROR  with response from the arduino to a good request')
+                print("ERROR in DEVICE TURNING OFF, STATE=",mainstate)
                 mainstate=serr
+                
+        elif mainstate==s6:
+            #print("Test the power on  sequence")
+            OK=ACommandProc.turn_on_device()
+            if OK == True:
+                print(' sucess in turning on device')
+                mainstate=s7
+            elif OK==False:
+                print("ERROR in DEVICE TURNING ON, STATE=",mainstate)
+                mainstate=serr
+                
         elif mainstate==s7:
+            #print("Test the initate command")
             OK=ACommandProc.initiate_arduino_command("analogRead",0)
             if not OK:
                 print(' ERROR in call')
@@ -348,6 +462,7 @@ if  __name__ == "__main__":
             else:
                 mainstate=s8
         elif mainstate==s8:
+            #print("Test the reply to  command")
             OK,val=ACommandProc.Arduino_command_response_OK()
             if OK:
                  print('read response is ', val)
@@ -356,42 +471,36 @@ if  __name__ == "__main__":
                 print('ERROR  with response from the arduino to a good request')
                 mainstate=serr        
         elif mainstate==s9 :
-            OK=ACommandProc.send_relay_senseON()
-            if not OK:
-                print(' ERROR in call')
+            #print("Test the sense relay  command")
+            OK=ACommandProc.turn_off_sense_relay()
+            if OK==False:
+                print(' ERROR relay sense off ')
                 mainstate=serr
-            else:
+            elif OK==True:
+                print ("turned the sense relay off")
                 mainstate=s10
 
         elif mainstate==s10:
-            OK,val=ACommandProc.Arduino_command_response_OK()
-            if OK:
-                 print('write response is OK in state ',mainstate)
-                 mainstate=s11
-            elif OK==False:
-                print('ERROR  with response from the arduino to a good request')
+           #print("Test the impedance command")
+            (OK,impedance)=ACommandProc.complete_impedance_measure()
+            if OK==False:
+                print(' ERROR impedance measurement ')
                 mainstate=serr
+            elif OK==True:
+                print ("impedance sequence all OK with impedance=",impedance)
+                mainstate=s11
         elif mainstate==s11:
-            OK=ACommandProc.send_relay_senseON()
-            if not OK:
-                print(' ERROR in call')
-                mainstate=serr
-            else:
-                mainstate=s88;
+         
+                mainstate=s88
         elif mainstate==s88: 
-            OK,val=ACommandProc.Arduino_command_response_OK()
-            if OK:
-                 print('write response is OK in state ',mainstate)
-                 mainstate=sfinal
-            elif OK==False:
-                print('ERROR  with response from the arduino to a good request')
-                mainstate=serr    
+           
+                mainstate=sfinal   
         elif mainstate==sfinal:
             print("ALL IS GOOD. wait for a few seconds before starting over")
             time.sleep(5)          
         elif mainstate==serr:
             print("ERRORS HERER wait for a few seconds before starting over")
             time.sleep(15)
-        time.sleep(2)
+        time.sleep(.1)
         
     
