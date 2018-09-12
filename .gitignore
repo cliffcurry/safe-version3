@@ -1,0 +1,7 @@
+*.pyc
+temp*.*
+*.old
+*.tmp
+*.bak
+*.doc
+*.docx

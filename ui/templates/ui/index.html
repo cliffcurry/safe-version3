@@ -1,0 +1,12 @@
+{% if machine_list %}
+    <ul>
+    {% for m in machine_list %}
+        <li>
+         {{m.id}}
+         <a href="/ui/{{ m.id }}/">{{m.name}}   </a>
+        </li>
+    {% endfor %}
+    </ul>
+{% else %}
+    <p>No machines are available.</p>
+{% endif %}
