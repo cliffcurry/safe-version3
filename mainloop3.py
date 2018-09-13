@@ -539,7 +539,7 @@ def mainloop(state,first_time_here_flag):
                 state=st.SERIAL_COMMAND_NOT_RESPONDING; first_time_here_flag=False
             if OK==True:
                 print('Impedance measurement is finished, value= ',val)
-                if val>5000:
+                if val>5000:  # impedance magic number, in Ohms, that determines if we will let the switch turn on. 
                     state= st.CALC_ACCESS_TIME; first_time_here_flag=True;   # switch is off, so turn the device on 
                     print("And that is considered OFF")
                 else:

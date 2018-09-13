@@ -17,9 +17,9 @@ class SerialClass():
     
     def __init__(self):
         #self.ser = serial.Serial('/dev/tty.usbserial', 9600,timeout=1)
-        #self.ser = serial.Serial('/dev/ttyUSB0', 9600)  ### read() will return bad data if the baudrate is incorrect
+        self.ser = serial.Serial('/dev/ttyUSB0', 9600)  ### read() will return bad data if the baudrate is incorrect
         #self.ser.baudrate = 115200
-        self.ser = serial.Serial('COM9', 9600) 
+        #self.ser = serial.Serial('COM11', 9600) 
         self.global_partial_line="";
         self.cardID_available=False
         self.commandResponse_available=False
