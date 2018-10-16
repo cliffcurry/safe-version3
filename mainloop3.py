@@ -151,8 +151,15 @@ def mainloop(state,first_time_here_flag):
         if first_time_here_flag==True:
             first_time_here_flag=False
             timeoutTimer1.set_time(timing_constants.SHORT_DISPLAY_DELAY);
-            ipaddress=socket.gethostbyname(socket.gethostname())  # look up the IP address of this device
-            if ipaddress=="127.0.0.1":   # it has not been assigned by the router
+            #ipaddress=socket.gethostbyname(socket.gethostname())  # look up the IP address of this device
+            ipaddress=((([ip for ip in socket.gethostbyname_ex(socket.gethostname())[2] 
+                          if not ip.startswith("127.")]
+                         or [[(s.connect(("8.8.8.8", 53)), s.getsockname()[0], s.close()) 
+                              for s in [socket.socket(socket.AF_INET, socket.SOCK_DGRAM)]]
+                             [0][1]])
+                        + ["no IP found"])
+                       [0])
+            if ipaddress=="no IP found":   # it has not been assigned by the router
                 print("You are not connected to the internet!")
                 state= st.NO_NETWORK; first_time_here_flag=True
             else:  # it has been assigned by the router

@@ -1,6 +1,6 @@
 first_swipe_reason='not on user list'
 user_touched_screen_flag=False
-SOFTWARE_VERSION=" 0.99"
+SOFTWARE_VERSION=" 1.00"
 my_mac_address='00:89:90:ab:34'  # retrieved in the display routine,,,very first thing
 first_swipe_prox_card="12345"
 second_swipe_prox_card="123456"
